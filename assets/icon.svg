@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <!-- Accessibility Manager Brand Icon: Full Dark Background (#0B0F19) & Deep Blue (#1E60FF) -->
+  </defs>
+  <!-- Full Dark Background with modern rounded squircle corners -->
+  <rect width="512" height="512" rx="112" fill="#0B0F19"/>
+
+  <!-- Power Switch Arc: Symbolizing instant service toggle & management -->
+  <path d="M 333 145 A 135 135 0 1 1 179 145"
+        fill="none"
+        stroke="#1E60FF"
+        stroke-width="26"
+        stroke-linecap="round"/>
+
+  <!-- Head of Accessibility Figure positioned at the switch apex -->
+  <circle cx="256" cy="132" r="30" fill="#1E60FF"/>
+
+  <!-- Outstretched Arched Arms representing human accessibility -->
+  <path d="M 172 220 Q 256 188 340 220"
+        fill="none"
+        stroke="#1E60FF"
+        stroke-width="26"
+        stroke-linecap="round"/>
+
+  <!-- Core Spine / Switch Toggle Stalk -->
+  <line x1="256" y1="205" x2="256" y2="295"
+        stroke="#1E60FF"
+        stroke-width="26"
+        stroke-linecap="round"/>
+
+  <!-- Legs of the Accessibility Figure -->
+  <path d="M 214 378 L 256 295 L 298 378"
+        fill="none"
+        stroke="#1E60FF"
+        stroke-width="26"
+        stroke-linecap="round"
+        stroke-linejoin="round"/>
+</svg>

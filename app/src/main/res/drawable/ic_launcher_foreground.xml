@@ -1,8 +1,40 @@
 <?xml version="1.0" encoding="utf-8"?>
-<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
-    <item
-        android:width="66dp"
-        android:height="66dp"
-        android:drawable="@drawable/accessibility_icon"
-        android:gravity="center" />
-</layer-list>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Power Switch Arc: Symbolizing instant accessibility service toggling -->
+    <path
+        android:pathData="M 70.2,30.6 A 28.5,28.5 0 1,1 37.8,30.6"
+        android:strokeColor="#1E60FF"
+        android:strokeWidth="5.5"
+        android:strokeLineCap="round" />
+
+    <!-- Head of the Accessibility Figure -->
+    <path
+        android:pathData="M 54,21.5 A 6.3,6.3 0 1,0 54,34.1 A 6.3,6.3 0 1,0 54,21.5 Z"
+        android:fillColor="#1E60FF" />
+
+    <!-- Outstretched Arched Arms representing human accessibility -->
+    <path
+        android:pathData="M 36.3,46.4 Q 54.0,39.7 71.7,46.4"
+        android:strokeColor="#1E60FF"
+        android:strokeWidth="5.5"
+        android:strokeLineCap="round" />
+
+    <!-- Core Spine / Switch Toggle Stalk -->
+    <path
+        android:pathData="M 54.0,43.2 L 54.0,62.2"
+        android:strokeColor="#1E60FF"
+        android:strokeWidth="5.5"
+        android:strokeLineCap="round" />
+
+    <!-- Legs of the Accessibility Figure -->
+    <path
+        android:pathData="M 45.1,79.7 L 54.0,62.2 L 62.9,79.7"
+        android:strokeColor="#1E60FF"
+        android:strokeWidth="5.5"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round" />
+</vector>
