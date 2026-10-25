@@ -1,0 +1,6 @@
+{
+  "name": "Accessibility Manager",
+  "description": "Manage Android Accessibility Services directly using Shizuku to bypass Xiaomi MIUI 14 delay.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
