@@ -25,6 +25,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
+import org.json.JSONArray
+import org.json.JSONObject
+import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 
 class AccessibilityRepository(
@@ -56,6 +59,125 @@ class AccessibilityRepository(
 
     suspend fun deleteGroup(groupId: String) = withContext(Dispatchers.IO) {
         dao.deleteGroupAndMembers(groupId)
+    }
+
+    data class ImportSummary(
+        val pinnedCount: Int,
+        val groupsCount: Int,
+        val enabledServicesCount: Int
+    )
+
+    suspend fun exportBackupJson(): String = withContext(Dispatchers.IO) {
+        val root = JSONObject()
+        root.put("version", 1)
+        root.put("exportedAt", System.currentTimeMillis())
+
+        // 1. Accessibility states
+        val rawEnabled = getRawEnabledServices()
+        val enabledList = parseEnabledServices(rawEnabled)
+        val enabledJson = JSONArray()
+        enabledList.forEach { enabledJson.put(it) }
+        root.put("enabledServices", enabledJson)
+
+        // 2. Pinned apps
+        val pinned = dao.getAllPinnedServicesList()
+        val pinnedJson = JSONArray()
+        pinned.forEach { pinnedJson.put(it.componentKey) }
+        root.put("pinnedServices", pinnedJson)
+
+        // 3. Groups (folders)
+        val groups = dao.getAllGroupsList()
+        val groupServices = dao.getAllGroupServicesList().groupBy { it.groupId }
+        val groupsJson = JSONArray()
+        for (g in groups) {
+            val gObj = JSONObject()
+            gObj.put("id", g.id)
+            gObj.put("name", g.name)
+            gObj.put("createdAt", g.createdAt)
+            val membersJson = JSONArray()
+            groupServices[g.id]?.forEach { membersJson.put(it.componentKey) }
+            gObj.put("serviceKeys", membersJson)
+            groupsJson.put(gObj)
+        }
+        root.put("groups", groupsJson)
+
+        root.toString(2)
+    }
+
+    suspend fun importBackupJson(
+        jsonString: String,
+        applyAccessibilityStates: Boolean = true
+    ): Result<ImportSummary> = withContext(Dispatchers.IO) {
+        try {
+            val root = JSONObject(jsonString)
+
+            // 1. Pinned services
+            var pinnedCount = 0
+            val pinnedArray = root.optJSONArray("pinnedServices")
+            if (pinnedArray != null && pinnedArray.length() > 0) {
+                val list = mutableListOf<PinnedServiceEntity>()
+                for (i in 0 until pinnedArray.length()) {
+                    val key = pinnedArray.optString(i)
+                    if (key.isNotBlank()) {
+                        list.add(PinnedServiceEntity(componentKey = key))
+                    }
+                }
+                if (list.isNotEmpty()) {
+                    dao.insertPinnedServices(list)
+                    pinnedCount = list.size
+                }
+            }
+
+            // 2. Groups (folders)
+            var groupsCount = 0
+            val groupsArray = root.optJSONArray("groups")
+            if (groupsArray != null && groupsArray.length() > 0) {
+                for (i in 0 until groupsArray.length()) {
+                    val gObj = groupsArray.optJSONObject(i) ?: continue
+                    val id = gObj.optString("id").ifBlank { UUID.randomUUID().toString() }
+                    val name = gObj.optString("name").ifBlank { "Imported Group" }
+                    val createdAt = gObj.optLong("createdAt", System.currentTimeMillis())
+                    val keysArray = gObj.optJSONArray("serviceKeys")
+                    val keys = mutableListOf<String>()
+                    if (keysArray != null) {
+                        for (k in 0 until keysArray.length()) {
+                            val key = keysArray.optString(k)
+                            if (key.isNotBlank()) keys.add(key)
+                        }
+                    }
+                    dao.saveGroupWithServices(AppGroupEntity(id = id, name = name, createdAt = createdAt), keys)
+                    groupsCount++
+                }
+            }
+
+            // 3. Accessibility states
+            var enabledCount = 0
+            val enabledArray = root.optJSONArray("enabledServices")
+            if (applyAccessibilityStates && enabledArray != null && enabledArray.length() > 0) {
+                val toEnable = mutableListOf<String>()
+                for (i in 0 until enabledArray.length()) {
+                    val key = enabledArray.optString(i)
+                    if (key.isNotBlank()) toEnable.add(key)
+                }
+
+                if (toEnable.isNotEmpty()) {
+                    val currentRaw = getRawEnabledServices()
+                    val currentList = parseEnabledServices(currentRaw).toMutableList()
+                    for (entry in toEnable) {
+                        if (!currentList.contains(entry)) {
+                            currentList.add(entry)
+                        }
+                    }
+                    writeEnabledServices(currentList)
+                    enabledCount = toEnable.size
+                }
+            }
+
+            Result.success(ImportSummary(pinnedCount, groupsCount, enabledCount))
+        } catch (e: Exception) {
+            Log.e(TAG, "Error importing backup JSON", e)
+            Result.failure(e)
+        }
     }
 
     /**

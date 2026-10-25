@@ -2,6 +2,8 @@ package com.example.ui
 
 import android.content.Intent
 import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -21,6 +23,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Accessibility
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.FolderOpen
 import androidx.compose.material.icons.filled.FormatListBulleted
@@ -29,6 +32,8 @@ import androidx.compose.material.icons.filled.PushPin
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.SearchOff
 import androidx.compose.material.icons.filled.Security
+import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.filled.Upload
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
@@ -86,6 +91,22 @@ fun AccessibilityScreen(
     var showMenu by remember { mutableStateOf(false) }
     var showHelpDialog by remember { mutableStateOf(false) }
     var groupToDeleteId by remember { mutableStateOf<String?>(null) }
+
+    val exportLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.CreateDocument("application/json")
+    ) { uri ->
+        if (uri != null) {
+            viewModel.exportBackupToFile(uri, context)
+        }
+    }
+
+    val importLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        if (uri != null) {
+            viewModel.importBackupFromFile(uri, context)
+        }
+    }
 
     LaunchedEffect(uiState.userFeedbackMessage) {
         val message = uiState.userFeedbackMessage
@@ -158,6 +179,48 @@ fun AccessibilityScreen(
                                     viewModel.openCreateGroupDialog()
                                 },
                                 modifier = Modifier.testTag("menu_create_group")
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Export Data (Backup)...") },
+                                leadingIcon = {
+                                    Icon(Icons.Default.Upload, contentDescription = null)
+                                },
+                                onClick = {
+                                    showMenu = false
+                                    exportLauncher.launch("accessibility_manager_backup.json")
+                                },
+                                modifier = Modifier.testTag("menu_export_backup")
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Import Data (Restore)...") },
+                                leadingIcon = {
+                                    Icon(Icons.Default.Download, contentDescription = null)
+                                },
+                                onClick = {
+                                    showMenu = false
+                                    importLauncher.launch(arrayOf("application/json", "text/*", "*/*"))
+                                },
+                                modifier = Modifier.testTag("menu_import_backup")
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Share Backup...") },
+                                leadingIcon = {
+                                    Icon(Icons.Default.Share, contentDescription = null)
+                                },
+                                onClick = {
+                                    showMenu = false
+                                    viewModel.getExportBackupJson { json ->
+                                        val sendIntent = Intent().apply {
+                                            action = Intent.ACTION_SEND
+                                            putExtra(Intent.EXTRA_TEXT, json)
+                                            type = "text/plain"
+                                            putExtra(Intent.EXTRA_TITLE, "Accessibility Manager Backup")
+                                        }
+                                        val shareIntent = Intent.createChooser(sendIntent, "Share Backup JSON")
+                                        context.startActivity(shareIntent)
+                                    }
+                                },
+                                modifier = Modifier.testTag("menu_share_backup")
                             )
                             DropdownMenuItem(
                                 text = { Text("Enable All Services...") },

@@ -1,6 +1,7 @@
 package com.example.ui.components
 
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -78,8 +79,8 @@ fun ServiceItemCard(
                 onToggle(!item.isEnabled)
             }
             .testTag(uniqueTag),
-        color = MaterialTheme.colorScheme.surface,
-        tonalElevation = if (item.isEnabled) 3.dp else 1.dp,
+        color = MaterialTheme.colorScheme.surfaceVariant,
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
         shape = RoundedCornerShape(16.dp)
     ) {
         Row(

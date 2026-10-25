@@ -13,6 +13,12 @@ interface AppDao {
     @Query("SELECT * FROM pinned_services ORDER BY pinnedAt ASC")
     fun getAllPinnedServices(): Flow<List<PinnedServiceEntity>>
 
+    @Query("SELECT * FROM pinned_services")
+    suspend fun getAllPinnedServicesList(): List<PinnedServiceEntity>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertPinnedServices(entities: List<PinnedServiceEntity>)
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun pinService(entity: PinnedServiceEntity)
 
@@ -22,6 +28,9 @@ interface AppDao {
     // Groups
     @Query("SELECT * FROM app_groups ORDER BY createdAt ASC")
     fun getAllGroups(): Flow<List<AppGroupEntity>>
+
+    @Query("SELECT * FROM app_groups")
+    suspend fun getAllGroupsList(): List<AppGroupEntity>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertOrUpdateGroup(group: AppGroupEntity)
@@ -34,6 +43,9 @@ interface AppDao {
 
     @Query("SELECT * FROM group_services")
     fun getAllGroupServices(): Flow<List<GroupServiceCrossRef>>
+
+    @Query("SELECT * FROM group_services")
+    suspend fun getAllGroupServicesList(): List<GroupServiceCrossRef>
 
     @Query("SELECT * FROM group_services WHERE groupId = :groupId")
     fun getGroupServices(groupId: String): Flow<List<GroupServiceCrossRef>>

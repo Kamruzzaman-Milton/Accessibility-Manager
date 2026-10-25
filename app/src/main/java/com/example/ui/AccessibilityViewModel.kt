@@ -1,6 +1,8 @@
 package com.example.ui
 
 import android.app.Application
+import android.content.Context
+import android.net.Uri
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.data.AccessibilityRepository
@@ -461,6 +463,116 @@ class AccessibilityViewModel(application: Application) : AndroidViewModel(applic
 
     fun clearFeedbackMessage() {
         _uiState.update { it.copy(userFeedbackMessage = null) }
+    }
+
+    fun exportBackupToFile(uri: Uri, context: Context) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true) }
+            try {
+                val json = repository.exportBackupJson()
+                context.contentResolver.openOutputStream(uri)?.use { outputStream ->
+                    outputStream.write(json.toByteArray(Charsets.UTF_8))
+                    outputStream.flush()
+                }
+                _uiState.update {
+                    it.copy(
+                        isLoading = false,
+                        userFeedbackMessage = "Backup successfully exported!",
+                        isErrorFeedback = false
+                    )
+                }
+            } catch (e: Exception) {
+                _uiState.update {
+                    it.copy(
+                        isLoading = false,
+                        userFeedbackMessage = "Export failed: ${e.localizedMessage}",
+                        isErrorFeedback = true
+                    )
+                }
+            }
+        }
+    }
+
+    fun importBackupFromFile(uri: Uri, context: Context, applyAccessibilityStates: Boolean = true) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true) }
+            try {
+                val json = context.contentResolver.openInputStream(uri)?.use { inputStream ->
+                    inputStream.bufferedReader(Charsets.UTF_8).readText()
+                } ?: throw Exception("Unable to read selected file")
+
+                val result = repository.importBackupJson(json, applyAccessibilityStates)
+                if (result.isSuccess) {
+                    val summary = result.getOrNull()!!
+                    refresh()
+                    _uiState.update {
+                        it.copy(
+                            userFeedbackMessage = "Imported ${summary.groupsCount} groups, ${summary.pinnedCount} pinned apps, ${summary.enabledServicesCount} active states!",
+                            isErrorFeedback = false
+                        )
+                    }
+                } else {
+                    val err = result.exceptionOrNull()?.localizedMessage ?: "Unknown error"
+                    _uiState.update {
+                        it.copy(
+                            isLoading = false,
+                            userFeedbackMessage = "Import failed: $err",
+                            isErrorFeedback = true
+                        )
+                    }
+                }
+            } catch (e: Exception) {
+                _uiState.update {
+                    it.copy(
+                        isLoading = false,
+                        userFeedbackMessage = "Import error: ${e.localizedMessage}",
+                        isErrorFeedback = true
+                    )
+                }
+            }
+        }
+    }
+
+    fun getExportBackupJson(onReady: (String) -> Unit) {
+        viewModelScope.launch {
+            try {
+                val json = repository.exportBackupJson()
+                onReady(json)
+            } catch (e: Exception) {
+                _uiState.update {
+                    it.copy(
+                        userFeedbackMessage = "Failed to generate backup: ${e.localizedMessage}",
+                        isErrorFeedback = true
+                    )
+                }
+            }
+        }
+    }
+
+    fun importBackupFromString(json: String, applyAccessibilityStates: Boolean = true) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true) }
+            val result = repository.importBackupJson(json, applyAccessibilityStates)
+            if (result.isSuccess) {
+                val summary = result.getOrNull()!!
+                refresh()
+                _uiState.update {
+                    it.copy(
+                        userFeedbackMessage = "Imported ${summary.groupsCount} groups, ${summary.pinnedCount} pinned apps!",
+                        isErrorFeedback = false
+                    )
+                }
+            } else {
+                val err = result.exceptionOrNull()?.localizedMessage ?: "Invalid backup format"
+                _uiState.update {
+                    it.copy(
+                        isLoading = false,
+                        userFeedbackMessage = "Import failed: $err",
+                        isErrorFeedback = true
+                    )
+                }
+            }
+        }
     }
 
     private fun rebuildGroupUiModels() {
